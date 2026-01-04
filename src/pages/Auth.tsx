@@ -5,19 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Waves } from 'lucide-react';
-import { z } from 'zod';
-
-const emailSchema = z.string().email('Please enter a valid email address');
-const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
-const usernameSchema = z.string().min(3, 'Username must be at least 3 characters');
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string }>({});
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
   
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
@@ -32,24 +26,12 @@ export default function Auth() {
   const validate = () => {
     const newErrors: typeof errors = {};
 
-    try {
-      emailSchema.parse(email);
-    } catch (e: any) {
-      newErrors.email = e.errors[0].message;
+    if (username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
     }
 
-    try {
-      passwordSchema.parse(password);
-    } catch (e: any) {
-      newErrors.password = e.errors[0].message;
-    }
-
-    if (!isLogin) {
-      try {
-        usernameSchema.parse(username);
-      } catch (e: any) {
-        newErrors.username = e.errors[0].message;
-      }
+    if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
@@ -65,12 +47,12 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(username, password);
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
             toast({
               title: 'Login failed',
-              description: 'Invalid email or password. Please try again.',
+              description: 'Invalid username or password.',
               variant: 'destructive',
             });
           } else {
@@ -84,12 +66,12 @@ export default function Auth() {
           navigate('/');
         }
       } else {
-        const { error } = await signUp(email, password, username);
+        const { error } = await signUp(username, password);
         if (error) {
           if (error.message.includes('already registered')) {
             toast({
-              title: 'Account exists',
-              description: 'This email is already registered. Please log in instead.',
+              title: 'Username taken',
+              description: 'This username is already registered.',
               variant: 'destructive',
             });
           } else {
@@ -142,33 +124,18 @@ export default function Auth() {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <Input
-                  type="text"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="bg-input border-border"
-                  disabled={loading}
-                />
-                {errors.username && (
-                  <p className="text-destructive text-sm mt-1">{errors.username}</p>
-                )}
-              </div>
-            )}
-
             <div>
               <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="bg-input border-border"
                 disabled={loading}
+                autoComplete="username"
               />
-              {errors.email && (
-                <p className="text-destructive text-sm mt-1">{errors.email}</p>
+              {errors.username && (
+                <p className="text-destructive text-sm mt-1">{errors.username}</p>
               )}
             </div>
 
@@ -180,6 +147,7 @@ export default function Auth() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-input border-border"
                 disabled={loading}
+                autoComplete={isLogin ? "current-password" : "new-password"}
               />
               {errors.password && (
                 <p className="text-destructive text-sm mt-1">{errors.password}</p>
