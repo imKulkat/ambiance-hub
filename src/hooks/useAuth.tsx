@@ -7,8 +7,8 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>;
+  signIn: (username: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (username: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -63,7 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  // Convert username to a fake email for Supabase auth (it requires email format)
+  const usernameToEmail = (username: string) => `${username.toLowerCase()}@ambience.local`;
+
+  const signIn = async (username: string, password: string) => {
+    const email = usernameToEmail(username);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -71,7 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (username: string, password: string) => {
+    const email = usernameToEmail(username);
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
